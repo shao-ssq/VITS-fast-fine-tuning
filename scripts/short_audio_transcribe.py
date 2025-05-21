@@ -8,10 +8,12 @@ import argparse
 import torch
 
 lang2token = {
-            'zh': "[ZH]",
-            'ja': "[JA]",
-            "en": "[EN]",
-        }
+    'zh': "[ZH]",
+    'ja': "[JA]",
+    "en": "[EN]",
+}
+
+
 def transcribe_one(audio_path):
     try:
         # load audio and pad/trim it to fit 30 seconds
@@ -19,7 +21,7 @@ def transcribe_one(audio_path):
         audio = whisper.pad_or_trim(audio)
 
         # make log-Mel spectrogram and move to the same device as the model
-        mel = whisper.log_mel_spectrogram(audio).to(model.device)
+        mel = whisper.log_mel_spectrogram(audio, n_mels=128).to(model.device)
 
         # detect the spoken language
         _, probs = model.detect_language(mel)
@@ -62,24 +64,26 @@ if __name__ == "__main__":
     total_files = sum([len(files) for r, d, files in os.walk(parent_dir)])
     # resample audios
     # 2023/4/21: Get the target sampling rate
-    with open("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\configs\\finetune_speaker.json", 'r', encoding='utf-8') as f:
+    with open("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\configs\\finetune_speaker.json", 'r',
+              encoding='utf-8') as f:
         hps = json.load(f)
     target_sr = hps['data']['sampling_rate']
     processed_files = 0
     for speaker in speaker_names:
-        for i, wavfile in enumerate(list(os.walk(parent_dir +"\\" +speaker))[0][2]):
+        for i, wavfile in enumerate(list(os.walk(parent_dir + "\\" + speaker))[0][2]):
             # try to load file as audio
             if wavfile.startswith("processed_"):
                 continue
             try:
-                wav, sr = torchaudio.load(parent_dir + "\\"+ speaker + "\\" + wavfile, frame_offset=0, num_frames=-1, normalize=True,
+                wav, sr = torchaudio.load(parent_dir + "\\" + speaker + "\\" + wavfile, frame_offset=0, num_frames=-1,
+                                          normalize=True,
                                           channels_first=True)
                 wav = wav.mean(dim=0).unsqueeze(0)
                 if sr != target_sr:
                     wav = torchaudio.transforms.Resample(orig_freq=sr, new_freq=target_sr)(wav)
                 if wav.shape[1] / sr > 20:
                     print(f"{wavfile} too long, ignoring\n")
-                save_path = parent_dir +"\\"+ speaker + "\\"  + f"processed_{i}.wav"
+                save_path = parent_dir + "\\" + speaker + "\\" + f"processed_{i}.wav"
                 torchaudio.save(save_path, wav, target_sr, channels_first=True)
                 # transcribe text
                 lang, text = transcribe_one(save_path)
@@ -89,11 +93,11 @@ if __name__ == "__main__":
                     break
                 text = lang2token[lang] + text + lang2token[lang] + "\n"
                 speaker_annos.append(save_path + "|" + speaker + "|" + text)
-                
+
                 processed_files += 1
                 print(f"Processed: {processed_files}/{total_files}")
             except Exception as e:
-                print(f"{wavfile} failed.",e)
+                print(f"{wavfile} failed.", e)
                 traceback.print_exc()
                 break
 
@@ -108,8 +112,10 @@ if __name__ == "__main__":
     #     speaker_annos[i] = path + "|" + sid + "|" + cleaned_text
     # write into annotation
     if len(speaker_annos) == 0:
-        print("Warning: no short audios found, this IS expected if you have only uploaded long audios, videos or video links.")
-        print("this IS NOT expected if you have uploaded a zip file of short audios. Please check your file structure or make sure your audio language is supported.")
+        print(
+            "Warning: no short audios found, this IS expected if you have only uploaded long audios, videos or video links.")
+        print(
+            "this IS NOT expected if you have uploaded a zip file of short audios. Please check your file structure or make sure your audio language is supported.")
     with open("short_character_anno.txt", 'w', encoding='utf-8') as f:
         for line in speaker_annos:
             f.write(line)
