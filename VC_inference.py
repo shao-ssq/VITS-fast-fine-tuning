@@ -85,8 +85,8 @@ def create_vc_fn(model, hps, speaker_ids):
     return vc_fn
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_dir", default="./G_latest.pth", help="directory to your fine-tuned model")
-    parser.add_argument("--config_dir", default="./finetune_speaker.json", help="directory to your model config file")
+    parser.add_argument("--model_dir", default="D:\PyCharmWorkSpace\TTS\\VITS-fast-fine-tuning\output\G_latest.pth", help="directory to your fine-tuned model")
+    parser.add_argument("--config_dir", default="D:\PyCharmWorkSpace\TTS\VITS-fast-fine-tuning\configs\\finetune_speaker.json", help="directory to your model config file")
     parser.add_argument("--share", default=False, help="make link public (used in colab)")
 
     args = parser.parse_args()
@@ -131,8 +131,8 @@ if __name__ == "__main__":
                             录制或上传声音，并选择要转换的音色。
             """)
             with gr.Column():
-                record_audio = gr.Audio(label="record your voice", source="microphone")
-                upload_audio = gr.Audio(label="or upload audio here", source="upload")
+                record_audio = gr.Audio(label="record your voice")
+                upload_audio = gr.Audio(label="or upload audio here")
                 source_speaker = gr.Dropdown(choices=speakers, value=speakers[0], label="source speaker")
                 target_speaker = gr.Dropdown(choices=speakers, value=speakers[0], label="target speaker")
             with gr.Column():

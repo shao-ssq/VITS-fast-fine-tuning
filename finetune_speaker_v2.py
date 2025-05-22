@@ -16,9 +16,15 @@ from tqdm import tqdm
 
 import librosa
 import logging
-
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 logging.getLogger('numba').setLevel(logging.WARNING)
-
+warnings.filterwarnings(
+    "ignore",
+    message="stft with return_complex=False is deprecated"
+)
+from torchaudio._extension.utils import _init_dll_path
+_init_dll_path()
 import commons
 import utils
 from data_utils import (
@@ -50,7 +56,7 @@ def main():
   n_gpus = torch.cuda.device_count()
   os.environ['MASTER_ADDR'] = 'localhost'
   os.environ['MASTER_PORT'] = '8000'
-
+  os.environ['USE_LIBUV'] = '0'
   hps = utils.get_hparams()
   mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
 
@@ -107,8 +113,8 @@ def run(rank, n_gpus, hps):
           print("Failed to find latest checkpoint, loading G_0.pth...")
           if hps.train_with_pretrained_model:
               print("Train with pretrained model...")
-              _, _, _, epoch_str = utils.load_checkpoint("./pretrained_models/G_0.pth", net_g, None)
-              _, _, _, epoch_str = utils.load_checkpoint("./pretrained_models/D_0.pth", net_d, None)
+              _, _, _, epoch_str = utils.load_checkpoint("D:\PyCharmWorkSpace\TTS\VITS-fast-fine-tuning\pretrained_models\G_0.pth", net_g, None)
+              _, _, _, epoch_str = utils.load_checkpoint("D:\PyCharmWorkSpace\TTS\VITS-fast-fine-tuning\pretrained_models\D_0.pth", net_d, None)
           else:
               print("Train without pretrained model...")
           epoch_str = 1
@@ -116,8 +122,8 @@ def run(rank, n_gpus, hps):
   else:
       if hps.train_with_pretrained_model:
           print("Train with pretrained model...")
-          _, _, _, epoch_str = utils.load_checkpoint("./pretrained_models/G_0.pth", net_g, None)
-          _, _, _, epoch_str = utils.load_checkpoint("./pretrained_models/D_0.pth", net_d, None)
+          _, _, _, epoch_str = utils.load_checkpoint("D:\PyCharmWorkSpace\TTS\VITS-fast-fine-tuning\pretrained_models\G_0.pth", net_g, None)
+          _, _, _, epoch_str = utils.load_checkpoint("D:\PyCharmWorkSpace\TTS\VITS-fast-fine-tuning\pretrained_models\D_0.pth", net_d,None)
       else:
           print("Train without pretrained model...")
       epoch_str = 1
@@ -267,12 +273,12 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         utils.save_checkpoint(net_d, None, hps.train.learning_rate, epoch,
                               os.path.join(hps.model_dir, "D_latest.pth"))
         # save to google drive
-        if os.path.exists("/content/drive/MyDrive/"):
+        if os.path.exists("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\output\\"):
             utils.save_checkpoint(net_g, None, hps.train.learning_rate, epoch,
-                                  os.path.join("/content/drive/MyDrive/", "G_latest.pth"))
+                                  os.path.join("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\output\\", "G_latest.pth"))
 
             utils.save_checkpoint(net_d, None, hps.train.learning_rate, epoch,
-                                  os.path.join("/content/drive/MyDrive/", "D_latest.pth"))
+                                  os.path.join("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\output\\", "D_latest.pth"))
         if hps.preserved > 0:
           utils.save_checkpoint(net_g, None, hps.train.learning_rate, epoch,
                                   os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
@@ -287,14 +293,14 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           if os.path.exists(old_d):
             print(f"remove {old_d}")
             os.remove(old_d)
-          if os.path.exists("/content/drive/MyDrive/"):
+          if os.path.exists("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\output\\"):
               utils.save_checkpoint(net_g, None, hps.train.learning_rate, epoch,
-                                    os.path.join("/content/drive/MyDrive/", "G_{}.pth".format(global_step)))
+                                    os.path.join("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\output\\", "G_{}.pth".format(global_step)))
               utils.save_checkpoint(net_d, None, hps.train.learning_rate, epoch,
-                                    os.path.join("/content/drive/MyDrive/", "D_{}.pth".format(global_step)))
-              old_g = utils.oldest_checkpoint_path("/content/drive/MyDrive/", "G_[0-9]*.pth",
+                                    os.path.join("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\output\\", "D_{}.pth".format(global_step)))
+              old_g = utils.oldest_checkpoint_path("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\output\\", "G_[0-9]*.pth",
                                                    preserved=hps.preserved)  # Preserve 4 (default) historical checkpoints.
-              old_d = utils.oldest_checkpoint_path("/content/drive/MyDrive/", "D_[0-9]*.pth", preserved=hps.preserved)
+              old_d = utils.oldest_checkpoint_path("D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\output\\", "D_[0-9]*.pth", preserved=hps.preserved)
               if os.path.exists(old_g):
                   print(f"remove {old_g}")
                   os.remove(old_g)
@@ -306,8 +312,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         print("Maximum epoch reached, closing training...")
         exit()
 
-  if rank == 0:
-    logger.info('====> Epoch: {}'.format(epoch))
+  # if rank == 0:
+  #   logger.info('====> Epoch: {}'.format(epoch))
 
 
 def evaluate(hps, generator, eval_loader, writer_eval):

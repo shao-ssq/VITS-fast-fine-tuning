@@ -306,7 +306,7 @@ def str2bool(v):
 
 def get_hparams(init=True):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default="./configs/modified_finetune_speaker.json",
+    parser.add_argument('-c', '--config', type=str, default="D:\\PyCharmWorkSpace\\TTS\\VITS-fast-fine-tuning\\configs\\finetune_speaker.json",
                         help='JSON file for configuration')
     parser.add_argument('-m', '--model', type=str, default="pretrained_models",
                         help='Model name')
